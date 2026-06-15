@@ -14,6 +14,8 @@ import (
     application_apiv1 "github.com/mixigroup/mixi2-application-sdk-go/gen/go/social/mixi/application/service/application_api/v1"
 )
 
+const CONFIG_FILE = "~/.config/mixi2/env"
+
 // Client は mixi2 API を呼ぶための認証済みクライアントをまとめた構造体。
 // 他のアプリからも使い回せる。
 type Client struct {
@@ -31,7 +33,12 @@ func (c *Client) Close() {
 
 // New は環境変数を読み込み、認証済みの Client を返す。
 // ctx は認証情報が付いたコンテキストも返す。
-func New(ctx context.Context) (*Client, context.Context, error) {
+func NewClient() (*Client, context.Context, error) {
+    if err := loadEnvFile(CONFIG_FILE); err != nil {
+	return nil, nil, fmt.Errorf(
+		"warn: failed to load env file: %w", err)
+    }
+
     clientID     := os.Getenv("CLIENT_ID")
     clientSecret := os.Getenv("CLIENT_SECRET")
     tokenURL     := os.Getenv("TOKEN_URL")
@@ -49,7 +56,7 @@ func New(ctx context.Context) (*Client, context.Context, error) {
         return nil, nil, fmt.Errorf("authenticator の作成に失敗しました: %w", err)
     }
 
-    authCtx, err := authenticator.AuthorizedContext(ctx)
+    authCtx, err := authenticator.AuthorizedContext(context.Background())
     if err != nil {
         return nil, nil, fmt.Errorf("認証済みコンテキストの取得に失敗しました: %w", err)
     }
@@ -67,9 +74,22 @@ func New(ctx context.Context) (*Client, context.Context, error) {
     return &Client{Service: service, conn: conn}, authCtx, nil
 }
 
+func CreatePost(text string) (*application_apiv1.CreatePostResponse, error) {
+    client, ctx, err := NewClient()
+    if err != nil {
+	fmt.Fprintln(os.Stderr, "mixi2client error: hint: " + CONFIG_FILE + " を確認してください", err)
+        return nil, err
+    }
+    defer client.Close()
+
+    return client.Service.CreatePost(ctx, &application_apiv1.CreatePostRequest{
+        Text: text,
+    })
+}
+
 // envファイルを読み込んで環境変数にセットする
 // 既にOSの環境変数に設定済みのものは上書きしない
-func LoadEnvFile(path string) error {
+func loadEnvFile(path string) error {
 	// ~ を展開
 	if strings.HasPrefix(path, "~/") {
 		// := は Go の 短い変数宣言。「左辺の変数を新しく作って、右辺の値を入れる」という意味。 
