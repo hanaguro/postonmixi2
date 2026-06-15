@@ -5,7 +5,7 @@ CMD_PATH := ./cmd/mixi2post
 BIN_DIR := $(HOME)/bin
 BIN_PATH := $(BIN_DIR)/$(APP_NAME)
 
-.PHONY: help build run install clean fmt vet tidy
+.PHONY: help build run install fmt vet tidy
 
 help:
 	@echo "Available targets:"
@@ -37,5 +37,3 @@ vet:
 tidy:
 	go mod tidy
 
-clean:
-	rm -rf $(BIN_DIR)
