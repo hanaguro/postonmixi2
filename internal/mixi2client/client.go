@@ -77,8 +77,7 @@ func NewClient() (*Client, context.Context, error) {
 func CreatePost(text string) (*application_apiv1.CreatePostResponse, error) {
     client, ctx, err := NewClient()
     if err != nil {
-	fmt.Fprintln(os.Stderr, "mixi2client error: hint: " + CONFIG_FILE + " を確認してください", err)
-        return nil, err
+        return nil, fmt.Errorf("mixi2client error: hint: " + CONFIG_FILE + " を確認してください: %w", err)
     }
     defer client.Close()
 
@@ -90,8 +89,7 @@ func CreatePost(text string) (*application_apiv1.CreatePostResponse, error) {
 func DeletePost(id string) (*application_apiv1.DeletePostResponse, error) {
     client, ctx, err := NewClient()
     if err != nil {
-	fmt.Fprintln(os.Stderr, "mixi2client error: hint: " + CONFIG_FILE + " を確認してください", err)
-	return nil, err
+	return nil, fmt.Errorf("mixi2client error: hint: " + CONFIG_FILE + " を確認してください: %w", err)
     }
     defer client.Close()
 
