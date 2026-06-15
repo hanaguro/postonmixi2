@@ -10,7 +10,7 @@ import (
 
 func main() {
     if len(os.Args) < 2 {
-        fmt.Fprintln(os.Stderr, "usage: mixi2deletepost <text>")
+        fmt.Fprintln(os.Stderr, "usage: mixi2deletepost <postid>")
         os.Exit(1)
     }
     id := strings.Join(os.Args[1:], " ")
