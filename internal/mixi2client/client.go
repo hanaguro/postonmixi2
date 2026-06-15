@@ -31,7 +31,7 @@ func (c *Client) Close() {
     c.conn.Close()
 }
 
-// New は環境変数を読み込み、認証済みの Client を返す。
+// NewClient は環境変数を読み込み、認証済みの Client を返す。
 // ctx は認証情報が付いたコンテキストも返す。
 func NewClient() (*Client, context.Context, error) {
     if err := loadEnvFile(CONFIG_FILE); err != nil {
@@ -84,6 +84,19 @@ func CreatePost(text string) (*application_apiv1.CreatePostResponse, error) {
 
     return client.Service.CreatePost(ctx, &application_apiv1.CreatePostRequest{
         Text: text,
+    })
+}
+
+func DeletePost(id string) (*application_apiv1.DeletePostResponse, error) {
+    client, ctx, err := NewClient()
+    if err != nil {
+	fmt.Fprintln(os.Stderr, "mixi2client error: hint: " + CONFIG_FILE + " を確認してください", err)
+	return nil, err
+    }
+    defer client.Close()
+
+    return client.Service.DeletePost(ctx, &application_apiv1.DeletePostRequest{
+	PostId: id,
     })
 }
 
