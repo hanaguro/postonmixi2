@@ -10,6 +10,18 @@ PostOnMixi2は、以下の機能を提供します。
 mixi2 Developer Platformの[アプリケーションの概念](https://developer.mixi.social/docs/getting-started/concepts)にあるように、mixi2post/mixi2deletepostを使用する専用のアカウントからの投稿になります。  
 現状では、既に取得しているmixi2アカウントに対してmixi2post/mixi2deletepostを使用することはできません。
 
+## ビルド
+Makefileがありますので、次のコマンドでビルドしてください。
+```bash
+make build
+```
+make buildを行なうとデフォルトでは~/bin/以下にmixi2post/mixi2deletepostを出力します。
+```bash
+make BIN_DIR=~/bin2 build
+```
+とすることで~/bin2/以下にmixi2post/mixi2deletepostを出力します。
+
+
 ## 使い方
 ### ~/.config/mixi2/env
 mixi2のClient ID、Client Secret、Token URL、API Addressを記述するファイルです。  
