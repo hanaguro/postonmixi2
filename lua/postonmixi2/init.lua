@@ -1,5 +1,6 @@
 -- 空のテーブル（= オブジェクト）を作成・代入
 local M = {}
+local bluesky = false
 
 local function post_to_mixi2(text, callback)
 	-- mixi2post コマンドに投稿テキストを引数として渡す
@@ -32,6 +33,37 @@ local function post_to_mixi2(text, callback)
 		end,
 	})
 end -- ← 【修正】ここにあった余剰なendを整理し、関数の終端として正しく配置
+
+local function post_to_bluesky(text, callback)
+	local cmd = { "bsky", "post", text }
+
+	vim.fn.jobstart(cmd, {
+		-- stdout_buffered = true にすると プロセスが終了して出力が全部揃ってから1回だけ呼ばれる
+		stdout_buffered = true,
+		-- 本来はfunction(job_id, data, event) だがforce_idとeventは使わないので次の形になる
+		-- data は外部プロセスの標準出力を行ごとに分割した文字列の配列
+		on_stdout = function(_, data)
+			-- table.concat(data, "") で配列を1つの文字列に結合し、vim.trim() で余分な空白・改行を除去
+			local post_id = vim.trim(table.concat(data, ""))
+			if post_id ~= "" then
+				callback(true, "Posted! ID: " .. post_id)
+			else
+				callback(true, "Posted!")
+			end
+		end,
+		on_stderr = function(_, data)
+			local msg = vim.trim(table.concat(data, ""))
+			if msg ~= "" then
+				callback(false, msg)
+			end
+		end,
+		on_exit = function(_, code)
+			if code ~= 0 then
+				callback(false, "bsky post exited with code " .. code)
+			end
+		end,
+	})
+end
 
 function M.auth()
 	-- 設定ファイルの場所を案内するだけ（認証はenv変数で管理）
@@ -71,6 +103,17 @@ function M.send(text)
 			vim.notify("[postonmixi2] エラー: " .. msg, vim.log.levels.ERROR)
 		end
 	end)
+
+	vim.notify("bluesky = " .. tostring(bluesky) .. "", vim.log.levels.INFO)
+	if bluesky then
+		post_to_bluesky(text, function(ok, msg)
+			if ok then
+				vim.notify("[bsky post] " .. msg, vim.log.levels.INFO)
+			else
+				vim.notify("[bsky post] エラー: " .. msg, vim.log.levels.ERROR)
+			end
+		end)
+	end
 end
 
 function M.open_compose()
@@ -124,11 +167,15 @@ function M.open_compose()
 	local ns = vim.api.nvim_create_namespace("postonmixi2_hint")
 	-- nvim_buf_set_extmark(buf, ns, line, col, opts) は、指定したバッファの特定の行・列に
 	-- extmark（拡張マーカー）をセットする API。
+	local virtual_text = "  mixi2投稿ウィンドウ — :w で投稿、q でキャンセル  "
+	if bluesky then
+		virtual_text = "  mixi2/bluesky投稿ウィンドウ — :w で投稿、q でキャンセル  "
+	end
 	vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, {
 		-- virt_text は、仮想テキスト（virtual text） を指定するオプション。
 		-- テキストの内容と、そのハイライトグループを { texto, "group" } の配列で書く。
 		-- ハイライト: "Comment"（Neovim の標準ハイライトグループ、コメント色）
-		virt_text = { { "  mixi2投稿ウィンドウ — :w で投稿、q でキャンセル  ", "Comment" } },
+		virt_text = { { virtual_text, "Comment" } },
 		-- virt_text_pos は、仮想テキストをどこに置くか を指定するオプション。
 		-- "overlay" → 指定した列（col_num）にテキストを重ねて表示する。
 		virt_text_pos = "overlay",
@@ -169,6 +216,25 @@ function M.open_compose()
 					vim.notify("[postonmixi2] " .. msg, vim.log.levels.INFO)
 					-- vim.schedule(callback) は、Neovim のメインイベントループに、
 					-- ある関数を「少し後に」実行するよう予約する関数
+					if not bluesky then
+						vim.schedule(function()
+							-- ウィンドウがまだ存在しているか確認
+							if vim.api.nvim_win_is_valid(win) then
+								-- ウィンドウを 強制閉じる（true は保存チェック無視）
+								vim.api.nvim_win_close(win, true)
+							end
+						end)
+					end
+				else
+					vim.notify("[postonmixi2] エラー: " .. msg, vim.log.levels.ERROR)
+				end
+			end)
+			if bluesky then
+				post_to_bluesky(text, function(ok, msg)
+				if ok then
+					vim.notify("[bsky post] " .. msg, vim.log.levels.INFO)
+					-- vim.schedule(callback) は、Neovim のメインイベントループに、
+					-- ある関数を「少し後に」実行するよう予約する関数
 					vim.schedule(function()
 						-- ウィンドウがまだ存在しているか確認
 						if vim.api.nvim_win_is_valid(win) then
@@ -179,7 +245,8 @@ function M.open_compose()
 				else
 					vim.notify("[postonmixi2] エラー: " .. msg, vim.log.levels.ERROR)
 				end
-			end)
+				end)
+			end
 		end,
 	})
 
@@ -260,6 +327,11 @@ function M.setup(opts)
 		desc = "Post to mixi2",
 	})
 
+	local desc_str = "Open mixi2 compose window"
+	if opts.bluesky then
+		bluesky = true
+		desc_str = "Open mixi2/bluesky compose window"
+	end
 	-- ノーマルモードのキー割り当て
 	-- "n"はノーマルモードでのみ有効
 	-- opts.keymap or "s"はopts.keymap が設定されていればそれを使い、なければ s を使う
@@ -268,7 +340,7 @@ function M.setup(opts)
 	-- noremap = trueは再帰マッピングしない
 	-- silent = trueは余計なメッセージを出さない
 	-- desc = ...はキーマップの説明
-	end, { noremap = true, silent = true, desc = "Open mixi2 compose window" })
+	end, { noremap = true, silent = true, desc = desc_str })
 end
 
 return M
