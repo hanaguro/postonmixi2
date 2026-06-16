@@ -19,8 +19,8 @@ make buildを行なうとデフォルトでは~/bin/以下にmixi2post/mixi2dele
 ```bash
 make BIN_DIR=~/bin2 build
 ```
-とすることで~/bin2/以下にmixi2post/mixi2deletepostを出力します。
-
+とすることで~/bin2/以下にmixi2post/mixi2deletepostを出力します。  
+PATHの通ったところにmixi2post/mixi2deletepostを出力するようにしてください。
 
 ## 使い方
 ### ~/.config/mixi2/env
