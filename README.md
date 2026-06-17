@@ -50,7 +50,7 @@ mixi2deletepost <Post ID>
 ```
 
 ### neovimプラグイン
-*lazyを使用している場合
+* lazyを使用している場合
 ```lua
 	{
 		"hanaguro/postonmixi2",
