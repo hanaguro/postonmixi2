@@ -1,5 +1,6 @@
 local M = {}
 local bluesky = false
+local x = false
 
 local function post_to_mixi2(text, callback)
 	local cmd = { "mixi2post", text }
@@ -64,6 +65,13 @@ local function post_to_bluesky(text, callback)
 	})
 end
 
+local function post_to_x(text)
+	local encoded_text = vim.uri_encode(text)
+	local uri = "https://x.com/intent/tweet?text=" .. encoded_text
+
+	vim.ui.open(uri)
+end
+
 function M.auth()
 	local env_file = vim.fn.expand("~/.config/mixi2/env")
 	vim.notify(
@@ -104,6 +112,10 @@ function M.send(text)
 			end
 		end)
 	end
+
+	if x then
+		post_to_x(text)
+	end
 end
 
 function M.open_compose()
@@ -130,10 +142,14 @@ function M.open_compose()
 		" [mixi2 Compose]  :w で投稿して閉じる | q でキャンセル (最大149文字) ")
 
 	local ns = vim.api.nvim_create_namespace("postonmixi2_hint")
-	local virtual_text = "  mixi2投稿ウィンドウ — :w で投稿、q でキャンセル  "
+	local virtual_text = "  mixi2"
 	if bluesky then
-		virtual_text = "  mixi2/bluesky投稿ウィンドウ — :w で投稿、q でキャンセル  "
+		virtual_text = virtual_text .. "/bluesky"
 	end
+	if x then
+		virtual_text = virtual_text .. "/X"
+	end
+	virtual_text = virtual_text .. "投稿ウィンドウ — :w で投稿、q でキャンセル  "
 	vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, {
 		virt_text = { { virtual_text, "Comment" } },
 		virt_text_pos = "overlay",
@@ -186,6 +202,9 @@ function M.open_compose()
 					end
 				end)
 			end
+			if x then
+				post_to_x(text)
+			end
 		end,
 	})
 
@@ -234,11 +253,16 @@ function M.setup(opts)
 		desc = "Post to mixi2",
 	})
 
-	local desc_str = "Open mixi2 compose window"
+	local desc_str = "Open mixi2"
 	if opts.bluesky then
 		bluesky = true
-		desc_str = "Open mixi2/bluesky compose window"
+		desc_str = desc_str .. "/bluesky"
 	end
+	if opts.x then
+		x = true
+		desc_str = desc_str .. "/X"
+	end
+	desc_str = desc_str .. " compose window"
 	vim.keymap.set("n", opts.keymap or "s", function()
 		M.open_compose()
 	end, { noremap = true, silent = true, desc = desc_str })
