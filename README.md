@@ -3,7 +3,8 @@
 PostOnMixi2は、以下の機能を提供します。
 * mixi2への投稿を行なうmixi2post(goプログラム)
 * mixi2の投稿を削除するmixi2deletepost(goプログラム)
-* neovimからmixi2postを使用して投稿を行なうプラグイン
+* neovimからmixi2postを使用して投稿を行なうプラグイン (Blueskyへの同時投稿機能あり)
+
 
 使用するにはmixi2 Developer Platformを使用するためにmixi2 アカウントに対して開発者登録を行なう必要があります。  
   
@@ -57,8 +58,15 @@ mixi2deletepost <Post ID>
 		config = function()
 		  require("postonmixi2").setup({
 		    keymap = "s",
+		    bluesky = true, -- Blueskyへ同時に投稿する場合に設定
 		  })
 		end,
 	}
 ```
-この設定例の場合、sを押すことでneovimからmixi2postを使用して投稿を行なうことができます。
+この設定例の場合、sを押すことでneovimからmixi2postを使用して投稿を行なうことができます。`bluesky = true` に設定している場合、同時にBlueskyへも投稿されます。
+
+#### Bluesky投稿について
+Blueskyへの同時投稿機能を利用するには、別途 `bsky` コマンドが必要です。以下のリポジトリから取得し、`bsky post` コマンドで投稿ができる状態に設定してください。
+https://github.com/mattn/bsky
+
+
