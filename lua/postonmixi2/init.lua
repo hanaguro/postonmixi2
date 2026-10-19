@@ -66,7 +66,7 @@ local function post_to_bluesky(text, callback)
 end
 
 local function post_to_x(text)
-	local encoded_text = vim.uri_encode(text, "rfc3986")
+	local encoded_text = vim.uri_encode(text, "rfc2396")
 	local uri = "https://x.com/intent/tweet?text=" .. encoded_text
 
 	vim.ui.open(uri)
